@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style>
+		body {
+			font-family: Inter, sans-serif;
+			margin: 16px;
+		}
+
+		textarea {
+			width: 100%;
+			height: 580px;
+			font-family: monospace;
+			font-size: 12px;
+		}
+
+		button {
+			margin-top: 12px;
+		}
+	</style>
+</head>
+
+<body>
+
+	<textarea id="output"></textarea>
+	<button id="copy">Copy CSS</button>
+
+	<script>
+
+		// show messages
+		window.onmessage = event => {
+			const message = event.data.pluginMessage;
+
+			if (message.type === "EXPORT") {
+				document.getElementById("output").value = message.css;
+			}
+		};
+
+		// copy CSS function
+		document.getElementById("copy").addEventListener("click", async () => {
+
+			const text = output.value || output.textContent;
+
+			try {
+				if (navigator.clipboard && window.isSecureContext) {
+					await navigator.clipboard.writeText(text);
+				} else {
+					output.select();
+					document.execCommand("copy");
+				}
+				console.log("Text wurde kopiert");
+			} catch (error) {
+				console.error("Kopieren fehlgeschlagen:", error);
+			}
+		}
+		);
+	</script>
+
+</body>
+
+</html>
