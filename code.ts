@@ -7,6 +7,8 @@ figma.showUI( __html__, {
 // main function to collect css-code and post it to UI
 async function run() {
 
+	const collectiveFilterValues = ['color', 'radius', 'fontsize'];
+
 	const collections = await figma.variables.getLocalVariableCollectionsAsync();
 	const primitiveCollection = collections.find((c) => c.name === "Primitives");
 	const semanticCollection = collections.find((c) => c.name === "Semantic");
@@ -23,9 +25,9 @@ async function run() {
 
 	let css = "";
 
-	css += await buildPrimitiveSection(primitiveCollection);
+	css += await buildPrimitiveSection(primitiveCollection, collectiveFilterValues);
 	css += "\n\n";
-	css += await buildSemanticSection(semanticCollection);
+	css += await buildSemanticSection(semanticCollection, collectiveFilterValues);
 
 	figma.ui.postMessage({
 		type: "EXPORT",
@@ -135,7 +137,7 @@ async function resolveAlias(value: VariableValue): Promise<string> {
 }
 
 // build CSS for primitive values
-async function buildPrimitiveSection(collection: VariableCollection) {
+async function buildPrimitiveSection(collection: VariableCollection, collectiveFilterValues: string[]) {
 
 	let css = `    color-scheme: light dark;\n\n`;
 		
@@ -148,8 +150,9 @@ async function buildPrimitiveSection(collection: VariableCollection) {
 		for (const variableId of collection.variableIds) {
 
 			const variable = await figma.variables.getVariableByIdAsync(variableId);
+			const variableName = variable ? variable.name.toLowerCase() : "";
 
-			const variableName = variable.name.toLowerCase();
+			if (!variable || !collectiveFilterValues.some(word => variableName.includes(word)) ) continue;
 
 			// add line when new main value
 			let tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'))
@@ -157,8 +160,6 @@ async function buildPrimitiveSection(collection: VariableCollection) {
 				variableNameShort = tempVariableNameShort;
 				css += `\n`;
 			}
-
-			if (!variable || variableName.includes("spacing") || variableName.includes("border") ) continue;
 
 			const mode = collection.defaultModeId;
 			const value = variable.valuesByMode[mode];
@@ -178,7 +179,7 @@ async function buildPrimitiveSection(collection: VariableCollection) {
 	})();
 }
 
-async function buildSemanticSection(collection: VariableCollection) {
+async function buildSemanticSection(collection: VariableCollection, collectiveFilterValues: string[]) {
 
 	const lightMode = collection.modes.find((mode) => mode.name.toLowerCase() === "light");
 	const darkMode = collection.modes.find((mode) => mode.name.toLowerCase() === "dark");
@@ -197,7 +198,11 @@ async function buildSemanticSection(collection: VariableCollection) {
 			
 			const variable = await figma.variables.getVariableByIdAsync(variableId);
 
-			const variableName = variable.name.toLowerCase();
+			const variableName = variable ? variable.name.toLowerCase() : "";
+
+			if (!variable || !collectiveFilterValues.some(word => variableName.includes(word)) ) continue;
+			
+			// add line when new main value
 			let tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'));
 
 			if(variableNameShort != tempVariableNameShort) {
@@ -205,7 +210,6 @@ async function buildSemanticSection(collection: VariableCollection) {
 				css += `\n`;
 			}
 
-			if (!variable) continue;
 
 			const value = variable.valuesByMode[lightMode.modeId];
 			
