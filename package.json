@@ -1,7 +1,7 @@
 {
   "name": "bs-var-export",
   "version": "1.0.0",
-  "description": "Your Figma Plugin",
+  "description": "backslash variables export for figma",
   "main": "code.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
