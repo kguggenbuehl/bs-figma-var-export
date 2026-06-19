@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "target": "es2020",
+    "outDir": "build",
+    "rootDir": "src",
     "lib": ["es2020"],
     "strict": true,
     "typeRoots": [

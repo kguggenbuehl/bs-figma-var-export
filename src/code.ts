@@ -4,6 +4,9 @@ figma.showUI( __html__, {
 	height: 700,
 });
 
+const primitiveCollectionName = "Primitives";
+const semanticCollectionName = "Semantic";
+
 const primitivesFilterValues = ['color', 'fontsize'];
 const semanticFilterValues = ['color'];
 
@@ -11,8 +14,8 @@ const semanticFilterValues = ['color'];
 async function run(includeDarkMode: boolean) {
 
 	const collections = await figma.variables.getLocalVariableCollectionsAsync();
-	const primitiveCollection = collections.find((c) => c.name === "Primitives");
-	const semanticCollection = collections.find((c) => c.name === "Semantic");
+	const primitiveCollection = collections.find((c) => c.name === primitiveCollectionName);
+	const semanticCollection = collections.find((c) => c.name === semanticCollectionName);
 
 	if (!primitiveCollection) {
 		figma.notify("Collection 'Primitives' nicht gefunden");

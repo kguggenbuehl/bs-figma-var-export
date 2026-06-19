@@ -2,19 +2,20 @@
   "name": "bs-var-export",
   "version": "1.0.0",
   "description": "backslash variables export for figma",
-  "main": "code.js",
+  "main": "src/code.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "watch": "npm run build -- --watch"
+    "build": "tsc -p tsconfig.json && npm run copy-assets",
+    "copy-assets": "cp src/ui.html build/ui.html && cp manifest.json build/manifest.json",
+    "watch": "npm run copy-assets && concurrently \"tsc -p tsconfig.json --watch\" \"chokidar 'src/ui.html' 'manifest.json' -c 'npm run copy-assets'\""
   },
-  "author": "",
+  "author": "Kaspar Guggenbühl",
   "license": "",
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@figma/eslint-plugin-figma-plugins": "*",
     "@figma/plugin-typings": "^1.127.0",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^10.0.3",
     "eslint": "^9.39.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1"
