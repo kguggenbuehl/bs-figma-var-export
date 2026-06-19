@@ -4,10 +4,11 @@ figma.showUI( __html__, {
 	height: 700,
 });
 
-// main function to collect css-code and post it to UI
-async function run() {
+const primitivesFilterValues = ['color', 'fontsize'];
+const semanticFilterValues = ['color'];
 
-	const collectiveFilterValues = ['color', 'radius', 'fontsize'];
+// main function to collect css-code and post it to UI
+async function run(includeDarkMode: boolean) {
 
 	const collections = await figma.variables.getLocalVariableCollectionsAsync();
 	const primitiveCollection = collections.find((c) => c.name === "Primitives");
@@ -25,9 +26,9 @@ async function run() {
 
 	let css = "";
 
-	css += await buildPrimitiveSection(primitiveCollection, collectiveFilterValues);
+	css += await buildPrimitiveSection(primitiveCollection, primitivesFilterValues);
 	css += "\n\n";
-	css += await buildSemanticSection(semanticCollection, collectiveFilterValues);
+	css += await buildSemanticSection(semanticCollection, semanticFilterValues, includeDarkMode);
 
 	figma.ui.postMessage({
 		type: "EXPORT",
@@ -36,8 +37,13 @@ async function run() {
 }
 
 // returns variable-name, replaces / with - and Color with clr
-function tokenName(name: string) {
-	return '--' + name.replace(/\//g, "-").replace('Color', "clr");
+function tokenNamePrimitives(name: string) {
+	return '--' + name.replace(/\//g, "-").replace('Typography-', "")
+}
+
+function tokenNameSemantic(name: string) {
+
+	return name.slice(name.lastIndexOf('/') + 1);
 }
 
 // returns RGB value as HEX
@@ -117,7 +123,7 @@ function colorToCssHSL(color: RGB | RGBA): string {
 	return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
-// returns CSS-Variable depending if it's a
+// returns CSS-Variable of chosen primitive
 async function resolveAlias(value: VariableValue): Promise<string> {
 	if (typeof value === "object" && value !== null && "type" in value && value.type === "VARIABLE_ALIAS") {
 		const variable = await figma.variables.getVariableByIdAsync(value.id);
@@ -126,7 +132,7 @@ async function resolveAlias(value: VariableValue): Promise<string> {
 			return "undefined";
 		}
 
-		return `var(${tokenName(variable.name)})`;
+		return `var(${tokenNamePrimitives(variable.name)})`;
 	}
 
 	if (typeof value === "object" && value !== null && "r" in value) {
@@ -137,11 +143,9 @@ async function resolveAlias(value: VariableValue): Promise<string> {
 }
 
 // build CSS for primitive values
-async function buildPrimitiveSection(collection: VariableCollection, collectiveFilterValues: string[]) {
+async function buildPrimitiveSection(collection: VariableCollection, primitivesFilterValues: string[]) {
 
-	let css = `    color-scheme: light dark;\n\n`;
-		
-	css += `    /* Primitives */\n`;
+	let css = `    /* Primitives */\n`;
 
 	return ( async () => {
 
@@ -150,12 +154,14 @@ async function buildPrimitiveSection(collection: VariableCollection, collectiveF
 		for (const variableId of collection.variableIds) {
 
 			const variable = await figma.variables.getVariableByIdAsync(variableId);
+
 			const variableName = variable ? variable.name.toLowerCase() : "";
-
-			if (!variable || !collectiveFilterValues.some(word => variableName.includes(word)) ) continue;
-
+			
+			// continue if variable doesn't contain one of the given words
+			if (!variable || !primitivesFilterValues.some(word => variableName.includes(word)) ) continue;
+			
 			// add line when new main value
-			let tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'))
+			const tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'))
 			if(variableNameShort != tempVariableNameShort) {
 				variableNameShort = tempVariableNameShort;
 				css += `\n`;
@@ -172,55 +178,61 @@ async function buildPrimitiveSection(collection: VariableCollection, collectiveF
 				cssValue = String(value) + "px";
 			}
 
-			css += `    ${tokenName(variable.name).toLowerCase()}: ${cssValue};\n`;
+			css += `    ${tokenNamePrimitives(variable.name).toLowerCase()}: ${cssValue};\n`;
 		}
 
 		return css;
 	})();
 }
 
-async function buildSemanticSection(collection: VariableCollection, collectiveFilterValues: string[]) {
+async function buildSemanticSection(collection: VariableCollection, semanticFilterValues: string[], includeDarkMode: boolean) {
 
 	const lightMode = collection.modes.find((mode) => mode.name.toLowerCase() === "light");
 	const darkMode = collection.modes.find((mode) => mode.name.toLowerCase() === "dark");
 
-	if (!lightMode || !darkMode) {
+	if (!lightMode || (includeDarkMode && !darkMode)) {
 		throw new Error("Light oder Dark Mode fehlt.");
 	}
 
 	let css = `    /* Semantic */\n`;
-	
+
+	if (includeDarkMode) {
+		css += `\n    color-scheme: light dark;\n`;
+	}
+
 	return (async () => {
 
 		let variableNameShort = "";
 
 		for (const variableId of collection.variableIds) {
-			
-			const variable = await figma.variables.getVariableByIdAsync(variableId);
 
+			const variable = await figma.variables.getVariableByIdAsync(variableId);
 			const variableName = variable ? variable.name.toLowerCase() : "";
 
-			if (!variable || !collectiveFilterValues.some(word => variableName.includes(word)) ) continue;
-			
-			// add line when new main value
-			let tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'));
+			if (!variable || !semanticFilterValues.some(word => variableName.includes(word))) continue;
 
-			if(variableNameShort != tempVariableNameShort) {
+			// add line when new main value
+			const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
+
+			if (variableNameShort != tempVariableNameShort) {
 				variableNameShort = tempVariableNameShort;
 				css += `\n`;
 			}
 
+			// values ausgeben
+			const lightValue = variable.valuesByMode[lightMode.modeId];
 
-			const value = variable.valuesByMode[lightMode.modeId];
-			
-			if (typeof value === "object" && value !== null) {
+			if (typeof lightValue === "object" && lightValue !== null) {
 
-				const lightValue = variable.valuesByMode[lightMode.modeId];
-				const darkValue = variable.valuesByMode[darkMode.modeId];
 				const light = await resolveAlias(lightValue as VariableValue);
-				const dark = await resolveAlias(darkValue as VariableValue);
 
-				css += `    ${tokenName(variable.name).toLowerCase()}: light-dark(${light.toLowerCase()}, ${dark.toLowerCase()});\n`;
+				if (includeDarkMode && darkMode) {
+					const darkValue = variable.valuesByMode[darkMode.modeId];
+					const dark = await resolveAlias(darkValue as VariableValue);
+					css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: light-dark(${light.toLowerCase()}, ${dark.toLowerCase()});\n`;
+				} else {
+					css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: ${light.toLowerCase()};\n`;
+				}
 			}
 		}
 
@@ -229,8 +241,12 @@ async function buildSemanticSection(collection: VariableCollection, collectiveFi
 	})();
 }
 
-// run script
-run().catch((error) => {
-	console.error(error);
-	figma.notify("Fehler beim Export.");
-});
+// listen for message from UI (z.B. Button-Klick mit Checkbox-Status)
+figma.ui.onmessage = (msg) => {
+	if (msg.type === "EXPORT_REQUEST") {
+		run(msg.includeDarkMode).catch((error) => {
+			console.error(error);
+			figma.notify("Fehler beim Export.");
+		});
+	}
+};
