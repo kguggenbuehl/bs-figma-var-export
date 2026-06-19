@@ -7,5 +7,5 @@ Für eine einfache Verwendung im Figma kann der Ordner `build` lokal geladen wer
 ## Entwicklung
 Im Ordner `src` sind die beiden entscheidenden Files `code.ts` und `ui.html`. 
 
-* `npm run watch` watched die "src/ui.html"- "manifest.json"- und "code.ts"-Datei auf Änderungen und aktualisiert den build bei einer Änderung.
-* `npm run build` kompliliert die code.ts-Datei und kopiert sie in den Build-Ordner. Ebenfalls werden manifest.json und ui.html in den Build-Ordner kopiert.
+* `npm run watch` watched die `src/ui.html`-, `manifest.json`- und `code.ts`-Datei auf Änderungen und aktualisiert den build bei einer Änderung.
+* `npm run build` kompliliert die `code.ts`-Datei und kopiert sie in den Build-Ordner. Ebenfalls werden `manifest.json` und `ui.html` in den Build-Ordner kopiert.s
