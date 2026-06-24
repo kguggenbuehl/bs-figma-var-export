@@ -147,11 +147,9 @@ async function buildSemanticSection(collection, semanticFilterValues, includeDar
         throw new Error("Light oder Dark Mode fehlt.");
     }
     let css = `    /* Semantic */\n`;
-    if (includeDarkMode) {
-        css += `\n    color-scheme: light dark;\n`;
-    }
     return (async () => {
         let variableNameShort = "";
+        // add light values
         for (const variableId of collection.variableIds) {
             const variable = await figma.variables.getVariableByIdAsync(variableId);
             const variableName = variable ? variable.name.toLowerCase() : "";
@@ -167,15 +165,31 @@ async function buildSemanticSection(collection, semanticFilterValues, includeDar
             const lightValue = variable.valuesByMode[lightMode.modeId];
             if (typeof lightValue === "object" && lightValue !== null) {
                 const light = await resolveAlias(lightValue);
-                if (includeDarkMode && darkMode) {
-                    const darkValue = variable.valuesByMode[darkMode.modeId];
-                    const dark = await resolveAlias(darkValue);
-                    css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: light-dark(${light.toLowerCase()}, ${dark.toLowerCase()});\n`;
+                css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: ${light.toLowerCase()};\n`;
+            }
+        }
+        // add dark values
+        if (includeDarkMode) {
+            css += `\n    @media (prefers-color-scheme: dark) {\n`;
+            for (const variableId of collection.variableIds) {
+                const variable = await figma.variables.getVariableByIdAsync(variableId);
+                const variableName = variable ? variable.name.toLowerCase() : "";
+                if (!variable || !semanticFilterValues.some(word => variableName.includes(word)))
+                    continue;
+                // add line when new main value
+                const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
+                if (variableNameShort != tempVariableNameShort) {
+                    variableNameShort = tempVariableNameShort;
+                    css += `\n`;
                 }
-                else {
-                    css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: ${light.toLowerCase()};\n`;
+                // values ausgeben
+                const darkValue = variable.valuesByMode[darkMode.modeId];
+                if (typeof darkValue === "object" && darkValue !== null) {
+                    const dark = await resolveAlias(darkValue);
+                    css += `        ${tokenNameSemantic(variable.name).toLowerCase()}: ${dark.toLowerCase()};\n`;
                 }
             }
+            css += `\n    }\n`;
         }
         return css;
     })();

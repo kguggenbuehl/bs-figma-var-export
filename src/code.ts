@@ -199,14 +199,11 @@ async function buildSemanticSection(collection: VariableCollection, semanticFilt
 
 	let css = `    /* Semantic */\n`;
 
-	if (includeDarkMode) {
-		css += `\n    color-scheme: light dark;\n`;
-	}
-
 	return (async () => {
 
 		let variableNameShort = "";
 
+		// add light values
 		for (const variableId of collection.variableIds) {
 
 			const variable = await figma.variables.getVariableByIdAsync(variableId);
@@ -228,16 +225,43 @@ async function buildSemanticSection(collection: VariableCollection, semanticFilt
 			if (typeof lightValue === "object" && lightValue !== null) {
 
 				const light = await resolveAlias(lightValue as VariableValue);
+				css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: ${light.toLowerCase()};\n`;
 
-				if (includeDarkMode && darkMode) {
-					const darkValue = variable.valuesByMode[darkMode.modeId];
-					const dark = await resolveAlias(darkValue as VariableValue);
-					css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: light-dark(${light.toLowerCase()}, ${dark.toLowerCase()});\n`;
-				} else {
-					css += `    ${tokenNameSemantic(variable.name).toLowerCase()}: ${light.toLowerCase()};\n`;
-				}
 			}
 		}
+		
+		// add dark values
+		if (includeDarkMode) {
+			css += `\n    @media (prefers-color-scheme: dark) {\n`;
+		
+			for (const variableId of collection.variableIds) {
+
+				const variable = await figma.variables.getVariableByIdAsync(variableId);
+				const variableName = variable ? variable.name.toLowerCase() : "";
+
+				if (!variable || !semanticFilterValues.some(word => variableName.includes(word))) continue;
+
+				// add line when new main value
+				const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
+
+				if (variableNameShort != tempVariableNameShort) {
+					variableNameShort = tempVariableNameShort;
+					css += `\n`;
+				}
+
+				// values ausgeben
+				const darkValue = variable.valuesByMode[darkMode.modeId];
+
+				if (typeof darkValue === "object" && darkValue !== null) {
+
+					const dark = await resolveAlias(darkValue as VariableValue);
+					css += `        ${tokenNameSemantic(variable.name).toLowerCase()}: ${dark.toLowerCase()};\n`;
+
+				}
+			}
+			css += `\n    }\n`;
+		}
+
 
 		return css;
 
