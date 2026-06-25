@@ -120,6 +120,8 @@ async function buildPrimitiveSection(collection, primitivesFilterValues) {
             // continue if variable doesn't contain one of the given words
             if (!variable || !primitivesFilterValues.some(word => variableName.includes(word)))
                 continue;
+            if (variable.hiddenFromPublishing)
+                continue;
             // add line when new main value
             const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
             if (variableNameShort != tempVariableNameShort) {
@@ -155,6 +157,8 @@ async function buildSemanticSection(collection, semanticFilterValues, includeDar
             const variableName = variable ? variable.name.toLowerCase() : "";
             if (!variable || !semanticFilterValues.some(word => variableName.includes(word)))
                 continue;
+            if (variable.hiddenFromPublishing)
+                continue;
             // add line when new main value
             const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
             if (variableNameShort != tempVariableNameShort) {
@@ -175,6 +179,8 @@ async function buildSemanticSection(collection, semanticFilterValues, includeDar
                 const variable = await figma.variables.getVariableByIdAsync(variableId);
                 const variableName = variable ? variable.name.toLowerCase() : "";
                 if (!variable || !semanticFilterValues.some(word => variableName.includes(word)))
+                    continue;
+                if (variable.hiddenFromPublishing)
                     continue;
                 // add line when new main value
                 const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));

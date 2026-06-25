@@ -162,6 +162,7 @@ async function buildPrimitiveSection(collection: VariableCollection, primitivesF
 			
 			// continue if variable doesn't contain one of the given words
 			if (!variable || !primitivesFilterValues.some(word => variableName.includes(word)) ) continue;
+			if (variable.hiddenFromPublishing) continue;
 			
 			// add line when new main value
 			const tempVariableNameShort = variableName.slice(variableName.indexOf('/')+1, variableName.lastIndexOf('/'))
@@ -210,6 +211,7 @@ async function buildSemanticSection(collection: VariableCollection, semanticFilt
 			const variableName = variable ? variable.name.toLowerCase() : "";
 
 			if (!variable || !semanticFilterValues.some(word => variableName.includes(word))) continue;
+			if (variable.hiddenFromPublishing) continue;
 
 			// add line when new main value
 			const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
@@ -240,6 +242,7 @@ async function buildSemanticSection(collection: VariableCollection, semanticFilt
 				const variableName = variable ? variable.name.toLowerCase() : "";
 
 				if (!variable || !semanticFilterValues.some(word => variableName.includes(word))) continue;
+				if (variable.hiddenFromPublishing) continue;
 
 				// add line when new main value
 				const tempVariableNameShort = variableName.slice(variableName.indexOf('/') + 1, variableName.lastIndexOf('/'));
